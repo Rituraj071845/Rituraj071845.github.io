@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete Outfit Visualizer</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+        h1 {
+            text-align: center;
+            color: #6a5acd;
+            margin-bottom: 30px;
+        }
+        .selection-area {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        .option-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .option-group h2 {
+            margin: 0;
+            color: #6a5acd;
+            font-size: 18px;
+        }
+        .option-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .option-btn {
+            padding: 10px 20px;
+            background-color: #e6e6fa;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 16px;
+        }
+        .option-btn:hover {
+            background-color: #d6d6fa;
+        }
+        .option-btn.selected {
+            background-color: #6a5acd;
+            color: white;
+        }
+        .results-area {
+            display: none;
+            margin-top: 30px;
+        }
+        .outfit-sets {
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+        }
+        .outfit-set {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        .outfit-set-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #6a5acd;
+            margin-bottom: 15px;
+        }
+        .outfit-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+        }
+        .outfit-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 150px;
+        }
+        .item-image {
+            width: 150px;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 1px solid #eee;
+        }
+        .item-name {
+            margin-top: 8px;
+            font-size: 14px;
+            text-align: center;
+            font-weight: 500;
+        }
+        .generate-btn {
+            padding: 12px 30px;
+            background-color: #6a5acd;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 20px auto;
+            display: block;
+            transition: background-color 0.3s;
+        }
+        .generate-btn:hover {
+            background-color: #5a4acd;
+        }
+        .generate-btn:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Check the Item in Wardrobe</h1>
+        <h3>Editors: Amlan Das, 12318368, K23NV, B66
+            <br>Rishi Anand, 12321201, K23NV, B63
+            <br>Md. Alhaj, 12311524, K23NV, A15</h3>
+        
+        <div class="selection-area">
+            <div class="option-group">
+                <h2>Select Gender:</h2>
+                <div class="option-buttons">
+                    <button class="option-btn" onclick="selectOption('gender', 'male')">Male</button>
+                    <button class="option-btn" onclick="selectOption('gender', 'female')">Female</button>
+                </div>
+            </div>
+            
+            <div class="option-group">
+                <h2>Select Category:</h2>
+                <div class="option-buttons">
+                    <button class="option-btn" onclick="selectOption('category', 'casual')">Casual</button>
+                    <button class="option-btn" onclick="selectOption('category', 'party')">Party</button>
+                    <button class="option-btn" onclick="selectOption('category', 'summer')">Summer</button>
+                    <button class="option-btn" onclick="selectOption('category', 'winter')">Winter</button>
+                </div>
+            </div>
+            
+            <button class="generate-btn" id="generateBtn" onclick="showOutfits()" disabled>Show Outfit Ideas</button>
+        </div>
+        
+        <div class="results-area" id="resultsArea">
+            <h2>Outfit Suggestions</h2>
+            <div class="outfit-sets" id="outfitSets"></div>
+            <button class="generate-btn" onclick="resetSelections()">Start Over</button>
+        </div>
+    </div>
+
+    <script>
+        // Outfit database with separate images for each item
+        const outfitDatabase = {
+            male: {
+                casual: [
+                    {
+                        title: "Weekend Casual Look",
+                        items: [
+                            { name: "Graphic T-Shirt", image: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" },
+                            { name: "Dark Jeans", image: "https://images.unsplash.com/photo-1473966968600-fa801b869a1a?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" },
+                            { name: "White Sneakers", image: "https://images.unsplash.com/photo-1600269452121-4f2416e55c28?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" },
+                            { name: "Baseball Cap", image: "https://images.unsplash.com/photo-1521369909029-1af5c38a2f98?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" }
+                        ]
+                    },
+                    {
+                        title: "Smart Casual Outfit",
+                        items: [
+                            { name: "Button-Down Shirt", image: "https://images.unsplash.com/photo-1598033129183-c4f50c736f10?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" },
+                            { name: "Chino Pants", image: "https://images.unsplash.com/photo-1599249300675-c39f1dd2d6be?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" },
+                            { name: "Loafers", image: "https://images.unsplash.com/photo-1549298916-b41d501d3772?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" },
+                            { name: "Leather Watch", image: "https://images.unsplash.com/photo-1523170335258-f5ed11844a49?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" }
+                        ]
+                    }
+                ],
+                party: [
+                    {
+                        title: "Night Out Attire",
+                        items: [
+                            { name: "Silk Dress Shirt", image: "https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" },
+                            { name: "Slim Fit Jeans", image: "https://images.unsplash.com/photo-1473966968600-fa801b869a1a?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" },
+                            { name: "Chelsea Boots", image: "https://images.unsplash.com/photo-1549298916-b41d501d3772?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" },
+                            { name: "Statement Watch", image: "https://images.unsplash.com/photo-1523170335258-f5ed11844a49?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" }
+                        ]
+                    },
+                    {
+                        title: "Cocktail Party Look",
+                        items: [
+                            { name: "Blazer", image: "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" },
+                            { name: "Dress Pants", image: "https://images.unsplash.com/photo-1599249300675-c39f1dd2d6be?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" },
+                            { name: "Oxford Shoes", image: "https://images.unsplash.com/photo-1549298916-b41d501d3772?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" },
+                            { name: "Pocket Square", image: "https://images.unsplash.com/photo-1583744946564-b52d01e2da64?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" }
+                        ]
+                    }
+                ],
+                summer: [
+                    {
+                        title: "Beach Day Outfit",
+                        items: [
+                            { name: "Linen Shirt", image: "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" },
+                            { name: "Chino Shorts", image: "https://images.unsplash.com/photo-1604176354204-9268737828e4?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" },
+                            { name: "Espadrilles", image: "https://images.unsplash.com/photo-1600269452121-4f2416e55c28?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" },
+                            { name: "Aviator Sunglasses", image: "https://images.unsplash.com/photo-1511499767150-a48a237f0083?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" }
+                        ]
+                    },
+                    {
+                        title: "Summer Streetwear",
+                        items: [
+                            { name: "Tank Top", image: "https://images.unsplash.com/photo-1576566588028-4147f3842f27?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" },
+                            { name: "Cargo Shorts", image: "https://images.unsplash.com/photo-1604176354204-9268737828e4?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" },
+                            { name: "Slides", image: "https://images.unsplash.com/photo-1600269452121-4f2416e55c28?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" },
+                            { name: "Bucket Hat", image: "https://images.unsplash.com/photo-1521369909029-1af5c38a2f98?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" }
+                        ]
+                    }
+                ],
+                winter: [
+                    {
+                        title: "Winter Casual",
+                        items: [
+                            { name: "Cable Knit Sweater", image: "https://images.unsplash.com/photo-1527719327859-c6ce80353573?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" },
+                            { name: "Dark Jeans", image: "https://images.unsplash.com/photo-1473966968600-fa801b869a1a?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" },
+                            { name: "Leather Boots", image: "https://images.unsplash.com/photo-1549298916-b41d501d3772?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" },
+                            { name: "Wool Scarf", image: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" }
+                        ]
+                    },
+                    {
+                        title: "Cold Weather Style",
+                        items: [
+                            { name: "Puffer Jacket", image: "https://images.unsplash.com/photo-1551232864-3f0890e580d9?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" },
+                            { name: "Corduroy Pants", image: "https://images.unsplash.com/photo-1599249300675-c39f1dd2d6be?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" },
+                            { name: "Winter Boots", image: "https://images.unsplash.com/photo-1549298916-b41d501d3772?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" },
+                            { name: "Beanie", image: "https://images.unsplash.com/photo-1521369909029-1af5c38a2f98?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" }
+                        ]
+                    }
+                ]
+            },
+            female: {
+                casual: [
+                    {
+                        title: "Everyday Casual",
+                        items: [
+                            { name: "White T-Shirt", image: "https://images.unsplash.com/photo-1576566588028-4147f3842f27?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" },
+                            { name: "High-Waist Jeans", image: "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" },
+                            { name: "White Sneakers", image: "https://images.unsplash.com/photo-1600269452121-4f2416e55c28?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" },
+                            { name: "Crossbody Bag", image: "https://images.unsplash.com/photo-1591348122449-02525d70379b?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" }
+                        ]
+                    },
+                    {
+                        title: "Weekend Brunch Outfit",
+                        items: [
+                            { name: "Floral Blouse", image: "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" },
+                            { name: "Denim Skirt", image: "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" },
+                            { name: "Ankle Boots", image: "https://images.unsplash.com/photo-1549298916-b41d501d3772?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" },
+                            { name: "Straw Bag", image: "https://images.unsplash.com/photo-1591348122449-02525d70379b?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" }
+                        ]
+                    }
+                ],
+                party: [
+                    {
+                        title: "Cocktail Party Look",
+                        items: [
+                            { name: "Sequin Top", image: "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" },
+                            { name: "Black Pants", image: "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" },
+                            { name: "Heeled Sandals", image: "https://images.unsplash.com/photo-1549298916-b41d501d3772?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" },
+                            { name: "Clutch Bag", image: "https://images.unsplash.com/photo-1591348122449-02525d70379b?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" }
+                        ]
+                    }
+                ],
+                summer: [
+                    {
+                        title: "Summer Dress Outfit",
+                        items: [
+                            { name: "Sundress", image: "https://images.unsplash.com/photo-1525507119028-ed4c629a60a3?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" },
+                            { name: "Denim Jacket", image: "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" },
+                            { name: "Sandals", image: "https://images.unsplash.com/photo-1549298916-b41d501d3772?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" },
+                            { name: "Straw Hat", image: "https://images.unsplash.com/photo-1521369909029-1af5c38a2f98?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" }
+                        ]
+                    }
+                ],
+                winter: [
+                    {
+                        title: "Winter Chic",
+                        items: [
+                            { name: "Turtleneck Sweater", image: "https://images.unsplash.com/photo-1487222477894-8943e31ef7b2?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" },
+                            { name: "Wool Skirt", image: "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" },
+                            { name: "Knee-High Boots", image: "https://images.unsplash.com/photo-1549298916-b41d501d3772?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" },
+                            { name: "Cashmere Scarf", image: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" }
+                        ]
+                    }
+                ]
+            }
+        };
+
+        const selections = {
+            gender: null,
+            category: null
+        };
+
+        function selectOption(type, value) {
+            // Store selection
+            selections[type] = value;
+            
+            // Update button styles
+            const buttons = document.querySelectorAll(`.option-btn[onclick*="${type}"]`);
+            buttons.forEach(btn => {
+                btn.classList.remove('selected');
+                if (btn.textContent.toLowerCase() === value.toLowerCase()) {
+                    btn.classList.add('selected');
+                }
+            });
+            
+            // Enable generate button if both selections are made
+            if (selections.gender && selections.category) {
+                document.getElementById('generateBtn').disabled = false;
+            }
+        }
+
+        function showOutfits() {
+            const { gender, category } = selections;
+            const outfitSets = document.getElementById('outfitSets');
+            
+            // Clear previous results
+            outfitSets.innerHTML = '';
+            
+            // Get outfits from database
+            const outfits = outfitDatabase[gender]?.[category] || [];
+            
+            if (outfits.length === 0) {
+                outfitSets.innerHTML = '<p>No outfit suggestions found for your selection.</p>';
+                return;
+            }
+            
+            // Display each outfit set
+            outfits.forEach(outfit => {
+                const outfitSet = document.createElement('div');
+                outfitSet.className = 'outfit-set';
+                
+                let itemsHTML = '';
+                outfit.items.forEach(item => {
+                    itemsHTML += `
+                        <div class="outfit-item">
+                            <img src="${item.image}" class="item-image" alt="${item.name}">
+                            <div class="item-name">${item.name}</div>
+                        </div>
+                    `;
+                });
+                
+                outfitSet.innerHTML = `
+                    <div class="outfit-set-title">${outfit.title}</div>
+                    <div class="outfit-items">${itemsHTML}</div>
+                `;
+                
+                outfitSets.appendChild(outfitSet);
+            });
+            
+            // Show results area
+            document.getElementById('resultsArea').style.display = 'block';
+        }
+
+        function resetSelections() {
+            // Clear selections
+            selections.gender = null;
+            selections.category = null;
+            
+            // Reset UI
+            document.querySelectorAll('.option-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            
+            document.getElementById('generateBtn').disabled = true;
+            document.getElementById('resultsArea').style.display = 'none';
+        }
+    </script>
+</body>
+</html>

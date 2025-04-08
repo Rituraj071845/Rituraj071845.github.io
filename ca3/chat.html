@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Outfit Advisor</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+        h1 {
+            text-align: center;
+            color: #6a5acd;
+            margin-bottom: 30px;
+        }
+        .selection-area {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        .option-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .option-group h2 {
+            margin: 0;
+            color: #6a5acd;
+            font-size: 18px;
+        }
+        .option-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .option-btn {
+            padding: 10px 20px;
+            background-color: #e6e6fa;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 16px;
+        }
+        .option-btn:hover {
+            background-color: #d6d6fa;
+        }
+        .option-btn.selected {
+            background-color: #6a5acd;
+            color: white;
+        }
+        .results-area {
+            display: none;
+            margin-top: 30px;
+        }
+        .outfit-sets {
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+        }
+        .outfit-set {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        .outfit-set-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #6a5acd;
+            margin-bottom: 15px;
+        }
+        .outfit-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+        }
+        .outfit-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 150px;
+        }
+        .item-image {
+            width: 150px;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 1px solid #eee;
+        }
+        .item-name {
+            margin-top: 8px;
+            font-size: 14px;
+            text-align: center;
+            font-weight: 500;
+        }
+        .generate-btn {
+            padding: 12px 30px;
+            background-color: #6a5acd;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 20px auto;
+            display: block;
+            transition: background-color 0.3s;
+        }
+        .generate-btn:hover {
+            background-color: #5a4acd;
+        }
+        .generate-btn:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(106,90,205,.3);
+            border-radius: 50%;
+            border-top-color: #6a5acd;
+            animation: spin 1s ease-in-out infinite;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .error-message {
+            color: #d32f2f;
+            text-align: center;
+            padding: 15px;
+            background-color: #ffebee;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>AI Outfit Advisor</h1>
+        
+        <div class="selection-area">
+            <div class="option-group">
+                <h2>Select Gender:</h2>
+                <div class="option-buttons">
+                    <button class="option-btn" onclick="selectOption('gender', 'male')">Male</button>
+                    <button class="option-btn" onclick="selectOption('gender', 'female')">Female</button>
+                </div>
+            </div>
+            
+            <div class="option-group">
+                <h2>Select Category:</h2>
+                <div class="option-buttons">
+                    <button class="option-btn" onclick="selectOption('category', 'casual')">Casual</button>
+                    <button class="option-btn" onclick="selectOption('category', 'party')">Party</button>
+                    <button class="option-btn" onclick="selectOption('category', 'summer')">Summer</button>
+                    <button class="option-btn" onclick="selectOption('category', 'winter')">Winter</button>
+                </div>
+            </div>
+            
+            <button class="generate-btn" id="generateBtn" onclick="generateOutfits()" disabled>Generate Outfit Ideas</button>
+        </div>
+        
+        <div class="results-area" id="resultsArea">
+            <h2>AI-Generated Outfit Suggestions</h2>
+            <div class="outfit-sets" id="outfitSets"></div>
+            <button class="generate-btn" onclick="resetSelections()">Start Over</button>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const API_KEY = "AIzaSyCfcT36kmxZaa73x-aRgP2poeUfD2B4xpc"; // Replace with your actual OpenAI API key
+        const selections = {
+            gender: null,
+            category: null
+        };
+
+        // Cache for previously generated outfits to avoid duplicate API calls
+        const outfitCache = {};
+
+        function selectOption(type, value) {
+            selections[type] = value;
+            
+            const buttons = document.querySelectorAll(`.option-btn[onclick*="${type}"]`);
+            buttons.forEach(btn => {
+                btn.classList.remove('selected');
+                if (btn.textContent.toLowerCase() === value.toLowerCase()) {
+                    btn.classList.add('selected');
+                }
+            });
+            
+            document.getElementById('generateBtn').disabled = !(selections.gender && selections.category);
+        }
+
+        async function generateOutfits() {
+            const { gender, category } = selections;
+            const cacheKey = `${gender}_${category}`;
+            const generateBtn = document.getElementById('generateBtn');
+            const outfitSets = document.getElementById('outfitSets');
+            
+            // Show loading state
+            generateBtn.disabled = true;
+            generateBtn.innerHTML = 'Generating <span class="loading"></span>';
+            outfitSets.innerHTML = '';
+            
+            try {
+                // Check cache first
+                if (outfitCache[cacheKey]) {
+                    displayOutfits(outfitCache[cacheKey]);
+                    return;
+                }
+                
+                // Create AI prompt
+                const prompt = `Provide 3 complete outfit combinations for ${gender} ${category} wear. 
+                Each outfit should include:
+                1. Top wear (shirt, blouse, etc.)
+                2. Bottom wear (pants, skirt, etc.)
+                3. Footwear
+                4. One accessory
+                
+                Return a JSON array where each element has:
+                - "title": Creative outfit name
+                - "items": Array of the 4 clothing items
+                
+                Example:
+                [
+                    {
+                        "title": "Summer Casual Look",
+                        "items": ["Linen shirt", "Chino shorts", "Espadrilles", "Aviator sunglasses"]
+                    }
+                ]`;
+                
+                // Call OpenAI API
+                const response = await fetch("https://api.openai.com/v1/chat/completions", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${API_KEY}`
+                    },
+                    body: JSON.stringify({
+                        model: "gpt-3.5-turbo",
+                        messages: [{ role: "user", content: prompt }],
+                        temperature: 0.7,
+                        max_tokens: 1000
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`API request failed with status ${response.status}`);
+                }
+                
+                const data = await response.json();
+                const content = data.choices[0]?.message?.content;
+                
+                // Parse the response
+                let outfits = [];
+                try {
+                    outfits = JSON.parse(content);
+                    if (!Array.isArray(outfits)) {
+                        throw new Error("Invalid outfit data format");
+                    }
+                    
+                    // Cache the results
+                    outfitCache[cacheKey] = outfits;
+                    
+                    // Display the outfits
+                    displayOutfits(outfits);
+                } catch (e) {
+                    console.error("Error parsing response:", e);
+                    showError("Couldn't process the outfit suggestions. Please try again.");
+                }
+                
+            } catch (error) {
+                console.error("Error:", error);
+                showError("Failed to generate outfits. Please check your connection and try again.");
+            } finally {
+                generateBtn.innerHTML = 'Generate Outfit Ideas';
+                generateBtn.disabled = false;
+            }
+        }
+
+        function displayOutfits(outfits) {
+            const outfitSets = document.getElementById('outfitSets');
+            
+            if (!outfits || outfits.length === 0) {
+                showError("No outfit suggestions were generated. Please try again.");
+                return;
+            }
+            
+            // Display each outfit set
+            outfits.forEach(outfit => {
+                const outfitSet = document.createElement('div');
+                outfitSet.className = 'outfit-set';
+                
+                let itemsHTML = '';
+                outfit.items.forEach(item => {
+                    // Use the item name to find a relevant image
+                    const imageUrl = `https://source.unsplash.com/300x300/?${encodeURIComponent(item)},fashion`;
+                    itemsHTML += `
+                        <div class="outfit-item">
+                            <img src="${imageUrl}" class="item-image" alt="${item}" loading="lazy">
+                            <div class="item-name">${item}</div>
+                        </div>
+                    `;
+                });
+                
+                outfitSet.innerHTML = `
+                    <div class="outfit-set-title">${outfit.title}</div>
+                    <div class="outfit-items">${itemsHTML}</div>
+                `;
+                outfitSets.appendChild(outfitSet);
+            });
+            
+            // Show results area
+            document.getElementById('resultsArea').style.display = 'block';
+        }
+
+        function showError(message) {
+            const outfitSets = document.getElementById('outfitSets');
+            outfitSets.innerHTML = `
+                <div class="error-message">
+                    ${message}
+                </div>
+            `;
+            document.getElementById('resultsArea').style.display = 'block';
+        }
+
+        function resetSelections() {
+            selections.gender = null;
+            selections.category = null;
+            
+            document.querySelectorAll('.option-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            
+            document.getElementById('generateBtn').disabled = true;
+            document.getElementById('resultsArea').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
